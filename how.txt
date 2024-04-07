@@ -1,0 +1,5 @@
+Make sure you have Anaconda installed on your system
+copy and paste these in terminal and hit enter
+
+conda activate ./myenv
+python app.py

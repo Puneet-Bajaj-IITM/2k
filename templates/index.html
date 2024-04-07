@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deepfake Detection</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Deepfake Detection</h1>
+        <div class="upload-container">
+            <label for="videoInput" class="upload-label">
+                <i class="fas fa-cloud-upload-alt"></i> Upload Video
+            </label>
+            <input type="file" id="videoInput" accept="video/*" class="file-input">
+        </div>
+        <div id="previewContainer" style="display: none;">
+            <video id="previewVideo" controls class="video-preview"></video>
+            <div class="btn-container">
+                <button onclick="playPreview()" class="play-btn">Play Video</button>
+            </div>
+            <div id="output" class="output"></div>
+        </div>
+    </div>
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+    <script src="scripts.js"></script>
+</body>
+</html>
