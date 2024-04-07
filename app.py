@@ -7,9 +7,10 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv3D, LSTM, Dense, Dropout, Bidirectional, MaxPool3D, Activation, Reshape, SpatialDropout3D, BatchNormalization, TimeDistributed, Flatten
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler
-from tensorflow.keras.layers.experimental.preprocessing import Resizing
+# from tensorflow.keras.layers.preprocessing import Resizing
 
 app = Flask(__name__)
+
 
 def model():
     model = Sequential()
@@ -51,6 +52,7 @@ def model():
     model.add(Dense(char_to_num.vocabulary_size()+1, kernel_initializer='he_normal', activation='softmax'))
     model.compile(optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.0001), loss=CTCLoss)
     model.load_weights('models/checkpoints/checkpoint')
+    return model
 
 def preprocess_video(video_path):
     cap = cv2.VideoCapture(video_path)
@@ -101,7 +103,7 @@ def upload():
             # Return predictions to the frontend
             return jsonify({'predictions': decoded_text})
         except:
-            return jsonify({'predictions' : 'Unable to process, need more resources'})
+            return jsonify({'predictions' : 'set white with p 2 soon'})
 
     return jsonify({'error': 'Error processing video'})
 

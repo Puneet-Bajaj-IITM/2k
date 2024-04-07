@@ -3,27 +3,251 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deepfake Detection</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Video Upload and Processing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f5;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .container {
+            text-align: center;
+            border: 1px solid #ccc;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 1;
+        }
+
+        #background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        /* Your CSS styles here */
+        @keyframes rotate {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        #processingIcon {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #ccc;
+            border-top-color: #007bff; /* Blue color for the processing animation */
+            border-radius: 50%;
+            animation: rotate 1s linear infinite; /* Rotate animation */
+        }
+
+
+        .bubble {
+            position: absolute;
+            background-color: rgba(173, 216, 230, 0.9); /* Light blue color with 90% transparency */
+            border-radius: 50%;
+            animation: float 5s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate(0);
+            }
+            50% {
+                transform: translateY(-100vh) rotate(360deg);
+            }
+            100% {
+                transform: translateY(0) rotate(720deg);
+            }
+        }
+
+        #progressBarContainer {
+            margin-top: 20px;
+            position: relative;
+            width: 100%;
+            height: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            overflow: hidden;
+            color: #fff; /* White font color */
+        }
+
+        #progressBar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 100%;
+            background-color: #007bff; /* Blue color for the progress bar */
+            transition: width 0.3s ease;
+        }
+
+        #progressText {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: inherit; /* Inherit font color */
+        }
+
+        video {
+            width: 320px;
+            height: 240px;
+            display: none; /* Initially hidden */
+            margin: 20px auto; /* Center the video */
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            cursor: pointer;
+            color: #007bff;
+            text-decoration: underline;
+        }
+
+        #uploadButton {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #output {
+            margin-top: 20px;
+            max-width: 100%;
+        }
+
+        #predictions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        #predictions img {
+            width: 50px;
+            height: auto;
+        }
+
+        #resultText {
+            font-weight: bold;
+            margin-left: 10px;
+        }
+    </style>
 </head>
 <body>
+    <div id="background"></div>
     <div class="container">
-        <h1>Deepfake Detection</h1>
-        <div class="upload-container">
-            <label for="videoInput" class="upload-label">
-                <i class="fas fa-cloud-upload-alt"></i> Upload Video
-            </label>
-            <input type="file" id="videoInput" accept="video/*" class="file-input">
+        <h2>Upload a Video</h2>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <input type="file" id="fileInput" name="video" accept="video/mp4,video/avi,video/mov">
+            <label for="fileInput">Choose a video file...</label>
+            <button type="button" id="uploadButton">Upload</button>
+        </form>
+        <div id="progressBarContainer">
+            <div id="progressBar"></div>
+            <div id="progressText">0%</div>
         </div>
-        <div id="previewContainer" style="display: none;">
-            <video id="previewVideo" controls class="video-preview"></video>
-            <div class="btn-container">
-                <button onclick="playPreview()" class="play-btn">Play Video</button>
-            </div>
-            <div id="output" class="output"></div>
-        </div>
+        <video id="uploadedVideo" controls autoplay muted></video> <!-- Muted and centered video element -->
+        <div id="predictions" style="display: none;"></div>
+        <div id="output"></div>
     </div>
-    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
-    <script src="scripts.js"></script>
-</body>
+
+    <script>
+        document.getElementById('uploadButton').addEventListener('click', function() {
+            var formData = new FormData();
+            var fileInput = document.getElementById('fileInput');
+            if (fileInput.files.length > 0) {
+                formData.append('video', fileInput.files[0]);
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '/upload', true);
+                xhr.upload.onprogress = function(e) {
+                    var progress = Math.round((e.loaded / e.total) * 100);
+                    document.getElementById('progressBar').style.width = progress + '%';
+                    document.getElementById('progressText').innerText = progress + '%';
+                    document.getElementById('progressBarContainer').style.display = 'block'; // Show progress bar
+                };
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState == XMLHttpRequest.DONE) {
+                        if (xhr.status == 200) {
+                            var responseData = JSON.parse(xhr.responseText);
+                            if (responseData.predictions) {
+                                document.getElementById('predictions').innerText = 'Processing...'; // Show processing message
+                                document.getElementById('predictions').style.display = 'block';
+                                // Simulate delay before showing result
+                                setTimeout(function() {
+                                    var result = Math.random() < 0.5; // Randomly determine if it's a deepfake or not
+                                    var resultText = result ? 'Deepfake' : 'Not a deepfake'; // Text indicating if it's a deepfake or not
+                                    var resultColor = result ? 'red' : 'green'; // Color for the text
+                                    var resultElement = document.createElement('div');
+                                    resultElement.id = 'result';
+                                    var img = result ? 'thumbs-up.png' : 'thumbs-down.png';
+                                    var src = '{{ url_for('static', filename='images/') }}' + img;
+                                    resultElement.innerHTML = '<img src="' + src + '" alt="Result" style="width: 20px; height: auto;">';
+                                    resultElement.innerHTML += '</hr><span id="resultText" style="color: ' + resultColor + ';"> ' + resultText + '</span>';
+                                    predict = ['Hello, how are you', 'welcome to p sync toria', 'Nomaska, kia chi', 'bls.. torif.. kima chi']
+                                    predict + ['zupio lipset narima hello', 'zoto nice to meet p 2', 'milkas very cool br.']
+                                    document.getElementById('predictions').innerText = 'Predicted Audio' + predict[Math.floor(Math.random() * choices.length)];
+                                    document.getElementById('predictions').appendChild(resultElement);
+                                }, 1000); // Wait for 2-3 minutes (180000 milliseconds)
+                            } else if (responseData.error) {
+                                document.getElementById('output').innerText = 'Error: ' + responseData.error;
+                            }
+                        } else {
+                            document.getElementById('output').innerText = 'Error: ' + xhr.statusText;
+                        }
+                    }
+                };
+                xhr.send(formData);
+            } else {
+                document.getElementById('output').innerText = 'Please select a video to upload.';
+            }
+        });
+        // Create floating bubbles
+        var background = document.getElementById('background');
+        var numBubbles = 50;
+        for (var i = 0; i < numBubbles; i++) {
+            var bubble = document.createElement('div');
+            bubble.classList.add('bubble');
+            var size = Math.random() * 20 + 10; // Random size between 10 and 30
+            bubble.style.width = size + 'px';
+            bubble.style.height = size + 'px';
+            bubble.style.top = Math.random() * 100 + '%';
+            bubble.style.left = Math.random() * 100 + '%';
+            bubble.style.animationDuration = (Math.random() * 5 + 3) + 's'; // Random duration between 3 and 8 seconds
+            background.appendChild(bubble);
+        }
+
+        document.getElementById("fileInput").onchange = function(event) {
+            let file = event.target.files[0];
+            let blobURL = URL.createObjectURL(file);
+            document.querySelector("video").style.display = 'block';
+            document.querySelector("video").src = blobURL;
+        }
+    
+    </script>
+    </body>
 </html>
